@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Convert Gross salary to net</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+  <style>
+    .display {
+      display: block;
+    }
+
+    .hide {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row mt-5 justify-content-center">
+      <div class="col-md-8">
+        <form name="salaryForm" id="salaryForm" onsubmit="return convertSalary()">
+          <div class="row mb-3">
+            <label for="gross-salary" class="col-sm-3 fw-bold col-form-label">Gross Salary: </label>
+            <div class="col-sm-9">
+              <input id="gross-salary" name="grossSalary" type="number" min="0" class="form-control form-inline"
+                placeholder="Input gross salary VND">
+            </div>
+          </div>
+          <div class="row mb-3">
+              <label for="insurance" class="col-sm-3 fw-bold col-form-label">Insurance Salary: </label>
+              <div class="col-sm-6">
+                <input id="insurance" name="insuranceSalary" type="number" min="0" class="form-control form-inline"
+                  placeholder="Input insurance salary VND">
+              </div>
+              <div class="col-sm-3">
+                <button onclick="copyValue()" type="button" class="btn btn-success d-inline w-100">Full Salary</button>
+              </div>
+          </div>
+          <div class="row mb-3">
+            <label for="dependant" class="col-sm-3 fw-bold col-form-label">Number of dependant: </label>
+            <div class="col-sm-9">
+              <input id="dependant" name="dependant" type="number" min="0" class="form-control form-inline"
+                placeholder="Input number of dependant">
+            </div>
+          </div>
+          <div class="row mb-3">
+            <button type="submit" class="btn btn-primary" id="btn-convert">Convert to NET salary</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="row mt-5 justify-content-center">
+      <div class="col-md-8">
+        <div class="hide" id="result">
+          <h1 class="fs-3">Net salary (VND)</h1>
+          <table class="table">
+            <tbody>
+              <tr data-row="gross-salary">
+                <th scope="row">1</th>
+                <th>Gross salary</th>
+                <td></td>
+              </tr>
+              <tr data-row="social-insurance">
+                <th scope="row">2</th>
+                <th>Social insurance (8%)</th>
+                <td></td>
+              </tr>
+              <tr data-row="health-insurance">
+                <th scope="row">3</th>
+                <th>Health insurance (1.5%)</th>
+                <td></td>
+              </tr>
+              <tr data-row="un-employment">
+                <th scope="row">4</th>
+                <th>Unemployment insurance (1%)</th>
+                <td></td>
+              </tr>
+              <tr data-row="before-tax" type>
+                <th scope="row">5</th>
+                <th>Before Tax Income</th>
+                <td></td>
+              </tr>
+              <tr data-row="personal-tax">
+                <th scope="row">6</th>
+                <th>Personal Deduction</th>
+                <td></td>
+              </tr>
+              <tr data-row="tax">
+                <th scope="row">7</th>
+                <th>Dependant deduction</th>
+                <td></td>
+              </tr>
+              <tr data-row="assemble-income">
+                <th scope="row">8</th>
+                <th>Taxable income</th>
+                <td></td>
+              </tr>
+              <tr data-row="income-tax" type>
+                <th scope="row">9</th>
+                <th>Personal income tax</th>
+                <td></td>
+              </tr>
+              <tr data-row="net">
+                <th scope="row">10</th>
+                <th>NET salary</th>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function copyValue() {
+      const source = Number(document.getElementById("gross-salary").value);
+      document.getElementById("insurance").value = source;
+    }
+
+    const convertSalary = () => {
+      const formData = new FormData(document.getElementById('salaryForm'));
+      const grossSalary = Number(formData.get('grossSalary'));
+      const insuranceSalary = Number(formData.get('insuranceSalary'));
+
+      const dependant = Number(document.forms['salaryForm']['dependant'].value);
+      const personalTax = -11000000;
+      const tax = -dependant * 4400000;
+      const beforeTax = grossSalary - insuranceSalary * 0.105
+      const assembleIncome = beforeTax + personalTax + tax;
+      // const incomeTax = assembleIncome * 0.05
+      // global variable
+
+      function calculateIncomeTax(vl1) {
+        const brackets = [
+          { limit: 5000000, rate: 0.05 },
+          { limit: 10000000, rate: 0.10 },
+          { limit: 18000000, rate: 0.15 },
+          { limit: 32000000, rate: 0.20 },
+          { limit: 52000000, rate: 0.25 },
+          { limit: 80000000, rate: 0.30 },
+          { limit: Infinity, rate: 0.35 }
+        ];
+
+        let vl2 = 0;
+        let previousLimit = 0;
+
+        for (let i = 0; i < brackets.length; i++) {
+          const { limit, rate } = brackets[i];
+
+          if (vl1 > previousLimit) {
+            const taxableAmount = Math.min(vl1, limit) - previousLimit;
+            vl2 += taxableAmount * rate;
+            previousLimit = limit;
+          } else {
+            break;
+          }
+        }
+        return vl2;
+      }
+
+      let incomeTax = -calculateIncomeTax(assembleIncome);
+      const net = beforeTax + incomeTax;
+      const result = document.getElementById('result');
+      result.setAttribute('class', 'display');
+
+      const formatter = Intl.NumberFormat('ja-JP', { style: 'decimal' });
+
+      const grossSalaryElement = document.querySelector('tr[data-row="gross-salary"]')?.lastElementChild;
+      grossSalaryElement.innerText = formatter.format(grossSalary);
+
+
+      const socialInsuranceElement = document.querySelector('tr[data-row="social-insurance"]')?.lastElementChild;
+      socialInsuranceElement.innerText = formatter.format(-insuranceSalary * 0.08);
+
+      const healthInsuranceElement = document.querySelector('tr[data-row="health-insurance"]')?.lastElementChild;
+      healthInsuranceElement.innerText = formatter.format(-insuranceSalary * 0.015);
+
+      const unEmploymentElement = document.querySelector('tr[data-row="un-employment"]')?.lastElementChild;
+      unEmploymentElement.innerText = formatter.format(-insuranceSalary * 0.01);
+
+      const personalTaxElement = document.querySelector('tr[data-row="personal-tax"]')?.lastElementChild;
+      personalTaxElement.innerText = formatter.format(personalTax)
+
+
+      const taxElement = document.querySelector('tr[data-row="tax"]')?.lastElementChild;
+      taxElement.innerText = formatter.format(tax);
+
+
+      const assembleIncomeElement = document.querySelector('tr[data-row="assemble-income"]')?.lastElementChild;
+      assembleIncomeElement.innerText = formatter.format(assembleIncome);
+
+      const incomeTaxElement = document.querySelector('tr[data-row="income-tax"]')?.lastElementChild;
+      incomeTaxElement.innerText = formatter.format(incomeTax);
+
+      const beforeTaxElement = document.querySelector('tr[data-row="before-tax"]')?.lastElementChild;
+      beforeTaxElement.innerText = formatter.format(beforeTax);
+
+      const netElement = document.querySelector('tr[data-row = "net"]')?.lastElementChild;
+      netElement.innerText = formatter.format(net);
+
+      return false;
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"
+    integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.min.js"
+    integrity="sha384-IDwe1+LCz02ROU9k972gdyvl+AESN10+x7tBKgc9I5HFtuNz0wWnPclzo6p9vxnk"
+    crossorigin="anonymous"></script>
+</body>
+
+</html>
